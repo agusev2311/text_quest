@@ -25,7 +25,7 @@ prompt = {
     "completionOptions": {
         "stream": False,
         "temperature": 1,
-        "maxTokens": "5000"
+        "maxTokens": config['max_tokens']
     },
     "messages": messages
 }
