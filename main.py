@@ -1,5 +1,6 @@
 import requests
 import json
+import telebot
 
 config = dict([])
 
@@ -10,13 +11,13 @@ print("Введите тему")
 topic = input()
 
 messages = [
-    {
-        "role": "system",
-        "text": "Ты ведущий текстового квеста. Он работает так: ты начинаешь рассказз, и говоришь пользователю только первую часть рассказа. Потом задаёшь ему вопрос, на который он должен ответить. Это может быть как выбор из трёх вариантов (1, 2, или 3). После этого отправляешь ему вторую часть рассказа которая строится учитывая его ответ. И так далее. Квест не должен никогда заканчиваться. Вы не должны отвечать за пользователя. Ещё раз напомнаю, что очень важно выводить за один ответ только одну часть рассказа"
-    },
+    # {
+    #     "role": "system",
+    #     "text": ""
+    # },
     {
         "role": "user", 
-        "text": f"Тема рассказа - {topic}"
+        "text": f"Ты ведущий текстового квеста. Ты должен выдавать части квеста, после каждой задавай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4. Пользователь не определяет сюжет, а только выбирает собственные действия. Тема квеста: {topic}. Расскажи первую часть и задай первый вопрос."
     }
 ]
 
@@ -42,7 +43,7 @@ tokens = 0
 while True:
     response = requests.post(url, headers=headers, json=prompt)
     result = json.loads(response.text)
-
+    print(result)
     print(result["result"]["alternatives"][0]["message"]["text"])
     tokens += int(result["result"]["usage"]["totalTokens"])
     print("Input: " + result["result"]["usage"]["inputTextTokens"] + ", output:" + result["result"]["usage"]["completionTokens"])
@@ -54,6 +55,6 @@ while True:
     messages.append(mes)
     ans = {
         "role": "user", 
-        "text": input()
+        "text": f"Игрок выбрал ответ {input()}. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4."
     }
     messages.append(ans)
