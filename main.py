@@ -2,6 +2,29 @@ import requests
 import json
 import telebot
 from telebot import types
+import sqlite3
+
+conn = sqlite3.connect('requests.db')
+cursor = conn.cursor()
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        messages TEXT,
+        response TEXT,
+        user_id TEXT
+    )
+''')
+conn.commit()
+conn.close()
+
+def save_request(messages, response, id):
+    conn = sqlite3.connect('requests.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO requests (messages, response, user_id) VALUES (?, ?, ?)
+    ''', (json.dumps(messages), json.dumps(response), json.dumps(id)))
+    conn.commit()
+    conn.close()
 
 config = dict([])
 
@@ -67,6 +90,8 @@ def start_quest(message):
             }
         ]
         ans = generate(msgs)
+        save_request(msgs, ans, message.chat.id)
+        messages[int(message.chat.id)].append(ans["result"]["alternatives"][0]["message"]["text"])
         bot.send_message(message.chat.id, ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup)
 
 
@@ -78,14 +103,25 @@ def handle_query(call):
     button3 = types.InlineKeyboardButton("3", callback_data='button3')
     button4 = types.InlineKeyboardButton("4", callback_data='button4')
     markup.add(button1, button2, button3, button4)
+    msgs = []
+    for i in range(len(messages[call.from_user.id])):
+        if (i % 2 == 0):
+            msgs.append({"role": "user", "text": messages[call.from_user.id][i]})
+        else:
+            msgs.append({"role": "assistant", "text": messages[call.from_user.id][i]})
     if call.data == 'button1':
-        bot.answer_callback_query(call.id, "Вы нажали кнопку 1")
+        messages[int(call.from_user.id)].append("Игрок выбрал ответ 1. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
     elif call.data == 'button2':
-        bot.answer_callback_query(call.id, "Вы нажали кнопку 2")
+        messages[int(call.from_user.id)].append("Игрок выбрал ответ 2. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
     elif call.data == 'button3':
-        bot.answer_callback_query(call.id, "Вы нажали кнопку 3")
+        messages[int(call.from_user.id)].append("Игрок выбрал ответ 3. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
     elif call.data == 'button4':
-        bot.answer_callback_query(call.id, "Вы нажали кнопку 4")
+        messages[int(call.from_user.id)].append("Игрок выбрал ответ 4. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
+    bot.send_message(call.from_user.id, "Генерация...")
+    ans = generate(msgs)
+    save_request(msgs, ans, call.from_user.id)
+    messages[int(call.from_user.id)].append(ans["result"]["alternatives"][0]["message"]["text"])
+    bot.send_message(call.from_user.id, ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup)
 
 
 @bot.message_handler(commands=["my_message"])
