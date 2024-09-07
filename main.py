@@ -3,6 +3,8 @@ import json
 import telebot
 from telebot import types
 import sqlite3
+import time
+from threading import Thread
 
 conn = sqlite3.connect('requests.db')
 cursor = conn.cursor()
@@ -16,6 +18,9 @@ cursor.execute('''
 ''')
 conn.commit()
 conn.close()
+
+global requests_queue
+requests_queue = []
 
 def save_request(messages, response, id):
     conn = sqlite3.connect('requests.db')
@@ -55,6 +60,27 @@ def generate(messages):
     result = json.loads(response.text)
     return result
 
+def gen_2():
+    global requests_queue
+    global messages
+    markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("1", callback_data='button1')
+    button2 = types.InlineKeyboardButton("2", callback_data='button2')
+    button3 = types.InlineKeyboardButton("3", callback_data='button3')
+    button4 = types.InlineKeyboardButton("4", callback_data='button4')
+    markup.add(button1, button2, button3, button4)
+    while True:
+        if (len(requests_queue) < 1):
+            continue
+        # print(requests_queue)
+        bot.send_message(requests_queue[0][0], "Генерация...")
+        msgs = requests_queue[0][1]
+        ans = generate(msgs)
+        save_request(msgs, ans, requests_queue[0][0])
+        messages[int(requests_queue[0][0])].append(ans["result"]["alternatives"][0]["message"]["text"])
+        bot.send_message(requests_queue[0][0], ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup)
+        requests_queue.pop(0)
+
 @bot.message_handler(commands=['start'])
 def start(message):
     bot.reply_to(message, """Привет! Я бот, который ведёт текстовый квест. В процессе игры ты будешь принимать решения, выбирая один из предложенных вариантов ответов. Каждый выбор будет влиять на дальнейшее развитие сюжета. Чтобы начать квестна пишите /start_quest <тема квеста>
@@ -81,7 +107,10 @@ def start_quest(message):
         button3 = types.InlineKeyboardButton("3", callback_data='button3')
         button4 = types.InlineKeyboardButton("4", callback_data='button4')
         markup.add(button1, button2, button3, button4)
-        bot.reply_to(message, "Генерация...")
+        if (len(requests_queue) > 0):
+            bot.reply_to(message, f"Вы добавлены в очередь. Перед вами {len(requests_queue)} реквест(ов/а)")
+        else:
+            pass
         messages[int(message.chat.id)] = [f"Ты ведущий текстового квеста. Ты должен выдавать части квеста, после каждой задавай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4. Пользователь не определяет сюжет, а только выбирает собственные действия. Тема квеста: {topic}. Расскажи первую часть и задай первый вопрос."]
         msgs = [
             {
@@ -89,26 +118,12 @@ def start_quest(message):
                 "text": f"Ты ведущий текстового квеста. Ты должен выдавать части квеста, после каждой задавай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4. Пользователь не определяет сюжет, а только выбирает собственные действия. Тема квеста: {topic}. Расскажи первую часть и задай первый вопрос."
             }
         ]
-        ans = generate(msgs)
-        save_request(msgs, ans, message.chat.id)
-        messages[int(message.chat.id)].append(ans["result"]["alternatives"][0]["message"]["text"])
-        bot.send_message(message.chat.id, ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup)
+        requests_queue.append([message.chat.id, msgs])
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
-    markup = types.InlineKeyboardMarkup()
-    button1 = types.InlineKeyboardButton("1", callback_data='button1')
-    button2 = types.InlineKeyboardButton("2", callback_data='button2')
-    button3 = types.InlineKeyboardButton("3", callback_data='button3')
-    button4 = types.InlineKeyboardButton("4", callback_data='button4')
-    markup.add(button1, button2, button3, button4)
     msgs = []
-    for i in range(len(messages[call.from_user.id])):
-        if (i % 2 == 0):
-            msgs.append({"role": "user", "text": messages[call.from_user.id][i]})
-        else:
-            msgs.append({"role": "assistant", "text": messages[call.from_user.id][i]})
     if call.data == 'button1':
         messages[int(call.from_user.id)].append("Игрок выбрал ответ 1. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
     elif call.data == 'button2':
@@ -117,15 +132,23 @@ def handle_query(call):
         messages[int(call.from_user.id)].append("Игрок выбрал ответ 3. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
     elif call.data == 'button4':
         messages[int(call.from_user.id)].append("Игрок выбрал ответ 4. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
-    bot.send_message(call.from_user.id, "Генерация...")
-    ans = generate(msgs)
-    save_request(msgs, ans, call.from_user.id)
-    messages[int(call.from_user.id)].append(ans["result"]["alternatives"][0]["message"]["text"])
-    bot.send_message(call.from_user.id, ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup)
+    for i in range(len(messages[call.from_user.id])):
+        if (i % 2 == 0):
+            msgs.append({"role": "user", "text": messages[call.from_user.id][i]})
+        else:
+            msgs.append({"role": "assistant", "text": messages[call.from_user.id][i]})
+    if (len(requests_queue) > 0):
+        bot.send_message(call.from_user.id, f"Вы добавлены в очередь. Перед вами {len(requests_queue)} реквест(ов/а)")
+    else:
+        pass
+    requests_queue.append([call.from_user.id, msgs])
 
 
 @bot.message_handler(commands=["my_message"])
 def start_quest(message):
     bot.send_message(message.chat.id, message)
 
-bot.polling()
+generate_thread = Thread(target=gen_2)
+generate_thread.start()
+
+bot.polling(none_stop=True)
