@@ -1,60 +1,95 @@
 import requests
 import json
 import telebot
+from telebot import types
 
 config = dict([])
 
 for i in open("config", "r").readlines():
     config[i.split(" = ")[0]] = i.split(" = ")[1].split("\n")[0]
 
-print("Введите тему")
-topic = input()
+bot = telebot.TeleBot(config["telegram_token"])
 
-messages = [
-    # {
-    #     "role": "system",
-    #     "text": ""
-    # },
-    {
-        "role": "user", 
-        "text": f"Ты ведущий текстового квеста. Ты должен выдавать части квеста, после каждой задавай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4. Пользователь не определяет сюжет, а только выбирает собственные действия. Тема квеста: {topic}. Расскажи первую часть и задай первый вопрос."
+def generate(messages):
+    prompt = {
+        "modelUri": f"gpt://{config['ac_id']}/yandexgpt-lite",
+        "completionOptions": {
+            "stream": False,
+            "temperature": 1,
+            "maxTokens": config['max_tokens']
+        },
+        "messages": messages
     }
-]
 
-prompt = {
-    "modelUri": f"gpt://{config['ac_id']}/yandexgpt-lite",
-    "completionOptions": {
-        "stream": False,
-        "temperature": 1,
-        "maxTokens": config['max_tokens']
-    },
-    "messages": messages
-}
+    url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
 
-url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Api-key {config['secret_key']}"
+    }
 
-headers = {
-    "Content-Type": "application/json",
-    "Authorization": f"Api-key {config['secret_key']}"
-}
-
-tokens = 0
-
-while True:
     response = requests.post(url, headers=headers, json=prompt)
     result = json.loads(response.text)
-    print(result)
-    print(result["result"]["alternatives"][0]["message"]["text"])
-    tokens += int(result["result"]["usage"]["totalTokens"])
-    print("Input: " + result["result"]["usage"]["inputTextTokens"] + ", output:" + result["result"]["usage"]["completionTokens"])
-    print("Всего потрачено токенов: " + str(tokens))
-    mes = {
-        "role": "assistant", 
-        "text": result["result"]["alternatives"][0]["message"]["text"]
-    }
-    messages.append(mes)
-    ans = {
-        "role": "user", 
-        "text": f"Игрок выбрал ответ {input()}. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4."
-    }
-    messages.append(ans)
+    return result
+
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.reply_to(message, """Привет! Я бот, который ведёт текстовый квест. В процессе игры ты будешь принимать решения, выбирая один из предложенных вариантов ответов. Каждый выбор будет влиять на дальнейшее развитие сюжета. Чтобы начать квестна пишите /start_quest <тема квеста>
+
+Если ты столкнешься с ошибками или у тебя возникнут вопросы, пожалуйста, напиши об этом @agusev2311. Приятной игры!
+""")
+
+messages = dict([])
+
+@bot.message_handler(commands=["start_quest"])
+def start_quest(message):
+    tags = message.text.split()
+    if (len(tags)) == 1:
+        bot.send_message(message.chat.id, """Эта команда позволяет запускать новый рассказ. Чтобы его запустить напишите /start_quest и тему рассказа
+
+Пример:
+/start_quest Как спасти планету от нашествия бананов""")
+    else:
+        topic = message.text[message.text.find(" ")+1:]
+        
+        markup = types.InlineKeyboardMarkup()
+        button1 = types.InlineKeyboardButton("1", callback_data='button1')
+        button2 = types.InlineKeyboardButton("2", callback_data='button2')
+        button3 = types.InlineKeyboardButton("3", callback_data='button3')
+        button4 = types.InlineKeyboardButton("4", callback_data='button4')
+        markup.add(button1, button2, button3, button4)
+        bot.reply_to(message, "Генерация...")
+        messages[int(message.chat.id)] = [f"Ты ведущий текстового квеста. Ты должен выдавать части квеста, после каждой задавай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4. Пользователь не определяет сюжет, а только выбирает собственные действия. Тема квеста: {topic}. Расскажи первую часть и задай первый вопрос."]
+        msgs = [
+            {
+                "role": "user", 
+                "text": f"Ты ведущий текстового квеста. Ты должен выдавать части квеста, после каждой задавай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4. Пользователь не определяет сюжет, а только выбирает собственные действия. Тема квеста: {topic}. Расскажи первую часть и задай первый вопрос."
+            }
+        ]
+        ans = generate(msgs)
+        bot.send_message(message.chat.id, ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: True)
+def handle_query(call):
+    markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("1", callback_data='button1')
+    button2 = types.InlineKeyboardButton("2", callback_data='button2')
+    button3 = types.InlineKeyboardButton("3", callback_data='button3')
+    button4 = types.InlineKeyboardButton("4", callback_data='button4')
+    markup.add(button1, button2, button3, button4)
+    if call.data == 'button1':
+        bot.answer_callback_query(call.id, "Вы нажали кнопку 1")
+    elif call.data == 'button2':
+        bot.answer_callback_query(call.id, "Вы нажали кнопку 2")
+    elif call.data == 'button3':
+        bot.answer_callback_query(call.id, "Вы нажали кнопку 3")
+    elif call.data == 'button4':
+        bot.answer_callback_query(call.id, "Вы нажали кнопку 4")
+
+
+@bot.message_handler(commands=["my_message"])
+def start_quest(message):
+    bot.send_message(message.chat.id, message)
+
+bot.polling()
