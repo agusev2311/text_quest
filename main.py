@@ -71,6 +71,7 @@ def gen_2():
     markup.add(button1, button2, button3, button4)
     while True:
         if (len(requests_queue) < 1):
+            time.sleep(2)
             continue
         # print(requests_queue)
         bot.send_message(requests_queue[0][0], "Генерация...")
@@ -80,6 +81,7 @@ def gen_2():
         messages[int(requests_queue[0][0])].append(ans["result"]["alternatives"][0]["message"]["text"])
         bot.send_message(requests_queue[0][0], ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup)
         requests_queue.pop(0)
+        time.sleep(2)
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -107,6 +109,15 @@ def start_quest(message):
         button3 = types.InlineKeyboardButton("3", callback_data='button3')
         button4 = types.InlineKeyboardButton("4", callback_data='button4')
         markup.add(button1, button2, button3, button4)
+
+        tf = True
+        for i in requests_queue:
+            if i[0] == message.chat.id:
+                tf = False
+        if not tf:
+            bot.send_message(message.chat.id, "Сейчас вы не можете сделать это действие, так как вы находитесь в очереди. Дождитесь пока вы выйдете из очереди.")
+            return 0
+
         if (len(requests_queue) > 0):
             bot.reply_to(message, f"Вы добавлены в очередь. Перед вами {len(requests_queue)} реквест(ов/а)")
         else:
@@ -123,6 +134,14 @@ def start_quest(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
+    tf = True
+    for i in requests_queue:
+        print(i)
+        if i[0] == call.from_user.id:
+            tf = False
+    if not tf:
+        bot.send_message(call.from_user.id, "Сейчас вы не можете сделать это действие, так как вы находитесь в очереди. Дождитесь пока вы выйдете из очереди.")
+        return 0
     msgs = []
     if call.data == 'button1':
         messages[int(call.from_user.id)].append("Игрок выбрал ответ 1. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
