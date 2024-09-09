@@ -112,7 +112,7 @@ def start_quest(message):
 
         tf = True
         for i in requests_queue:
-            if i[0] == message.chat.id:
+            if i[0] == message.from_user.id:
                 tf = False
         if not tf:
             bot.send_message(message.chat.id, "Сейчас вы не можете сделать это действие, так как вы находитесь в очереди. Дождитесь пока вы выйдете из очереди.")
@@ -140,27 +140,27 @@ def handle_query(call):
         if i[0] == call.from_user.id:
             tf = False
     if not tf:
-        bot.send_message(call.from_user.id, "Сейчас вы не можете сделать это действие, так как вы находитесь в очереди. Дождитесь пока вы выйдете из очереди.")
+        bot.send_message(call.message.chat.id, "Сейчас вы не можете сделать это действие, так как вы находитесь в очереди. Дождитесь пока вы выйдете из очереди.")
         return 0
     msgs = []
     if call.data == 'button1':
-        messages[int(call.from_user.id)].append("Игрок выбрал ответ 1. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
+        messages[int(call.message.chat.id)].append("Игрок выбрал ответ 1. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
     elif call.data == 'button2':
-        messages[int(call.from_user.id)].append("Игрок выбрал ответ 2. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
+        messages[int(call.message.chat.id)].append("Игрок выбрал ответ 2. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
     elif call.data == 'button3':
-        messages[int(call.from_user.id)].append("Игрок выбрал ответ 3. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
+        messages[int(call.message.chat.id)].append("Игрок выбрал ответ 3. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
     elif call.data == 'button4':
-        messages[int(call.from_user.id)].append("Игрок выбрал ответ 4. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
-    for i in range(len(messages[call.from_user.id])):
+        messages[int(call.message.chat.id)].append("Игрок выбрал ответ 4. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
+    for i in range(len(messages[call.message.chat.id])):
         if (i % 2 == 0):
-            msgs.append({"role": "user", "text": messages[call.from_user.id][i]})
+            msgs.append({"role": "user", "text": messages[call.message.chat.id][i]})
         else:
-            msgs.append({"role": "assistant", "text": messages[call.from_user.id][i]})
+            msgs.append({"role": "assistant", "text": messages[call.message.chat.id][i]})
     if (len(requests_queue) > 0):
-        bot.send_message(call.from_user.id, f"Вы добавлены в очередь. Перед вами {len(requests_queue)} реквест(ов/а)")
+        bot.send_message(call.message.chat.id, f"Вы добавлены в очередь. Перед вами {len(requests_queue)} реквест(ов/а)")
     else:
         pass
-    requests_queue.append([call.from_user.id, msgs])
+    requests_queue.append([call.message.chat.id, msgs])
 
 
 @bot.message_handler(commands=["my_message"])
