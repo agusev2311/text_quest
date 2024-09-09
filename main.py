@@ -143,6 +143,9 @@ def handle_query(call):
         bot.send_message(call.message.chat.id, "Сейчас вы не можете сделать это действие, так как вы находитесь в очереди. Дождитесь пока вы выйдете из очереди.")
         return 0
     msgs = []
+    if not (int(call.message.chat.id) in messages):
+        bot.send_message(call.message.chat.id, f"У вас нету истории запросов. Скорее всего бот был перезагружен, а при перезагрузке вся история переписок удаляется. Попробуйте начать квест заново. Если вам нужна история вашей переписки с ботом вы можете обратьтиться ко мне (@agusev2311)!")
+        return
     if call.data == 'button1':
         messages[int(call.message.chat.id)].append("Игрок выбрал ответ 1. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
     elif call.data == 'button2':
