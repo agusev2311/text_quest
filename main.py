@@ -5,6 +5,7 @@ from telebot import types
 import sqlite3
 import time
 from threading import Thread
+import datetime
 
 conn = sqlite3.connect('requests.db')
 cursor = conn.cursor()
@@ -13,7 +14,8 @@ cursor.execute('''
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         messages TEXT,
         response TEXT,
-        user_id TEXT
+        user_id TEXT,
+        time TEXT
     )
 ''')
 conn.commit()
@@ -26,8 +28,8 @@ def save_request(messages, response, id):
     conn = sqlite3.connect('requests.db')
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO requests (messages, response, user_id) VALUES (?, ?, ?)
-    ''', (json.dumps(messages), json.dumps(response), json.dumps(id)))
+        INSERT INTO requests (messages, response, user_id) VALUES (?, ?, ?, ?)
+    ''', (json.dumps(messages), json.dumps(response), json.dumps(id), datetime.datetime.now()))
     conn.commit()
     conn.close()
 
