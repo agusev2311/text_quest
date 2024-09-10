@@ -81,6 +81,9 @@ def gen_2():
         save_request(msgs, ans, requests_queue[0][0])
         messages[int(requests_queue[0][0])].append(ans["result"]["alternatives"][0]["message"]["text"])
         bot.send_message(requests_queue[0][0], ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup)
+        if int(ans["result"]["usage"]["totalTokens"]) > 7400:
+            bot.send_message(requests_queue[0][0], "Ваш запрос преодалел придел в 7400 токенов. Ваш диалог был сброшен")
+            messages[int(requests_queue[0][0])] = []
         requests_queue.pop(0)
         time.sleep(2)
 
@@ -145,6 +148,9 @@ def handle_query(call):
         return 0
     msgs = []
     if not (int(call.message.chat.id) in messages):
+        bot.send_message(call.message.chat.id, f"У вас нету истории запросов. Скорее всего бот был перезагружен, а при перезагрузке вся история переписок удаляется. Попробуйте начать квест заново. Если вам нужна история вашей переписки с ботом вы можете обратьтиться ко мне (@agusev2311)!")
+        return
+    if messages[call.message.chat.id] == []:
         bot.send_message(call.message.chat.id, f"У вас нету истории запросов. Скорее всего бот был перезагружен, а при перезагрузке вся история переписок удаляется. Попробуйте начать квест заново. Если вам нужна история вашей переписки с ботом вы можете обратьтиться ко мне (@agusev2311)!")
         return
     if call.data == 'button1':
