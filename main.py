@@ -68,7 +68,8 @@ def gen_2():
     button2 = types.InlineKeyboardButton("2", callback_data='button2')
     button3 = types.InlineKeyboardButton("3", callback_data='button3')
     button4 = types.InlineKeyboardButton("4", callback_data='button4')
-    markup.add(button1, button2, button3, button4)
+    markup.add(button1, button2)
+    markup.add(button3, button4)
     while True:
         if (len(requests_queue) < 1):
             time.sleep(2)
