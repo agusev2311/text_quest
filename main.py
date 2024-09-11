@@ -99,7 +99,7 @@ def gen_2():
         ans = generate(msgs)
         save_request(msgs, ans, requests_queue[0][0])
         messages[int(requests_queue[0][0])].append(ans["result"]["alternatives"][0]["message"]["text"])
-        bot.send_message(requests_queue[0][0], ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup)
+        bot.send_message(requests_queue[0][0], ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup, parse_mode="markdown")
         if int(ans["result"]["usage"]["totalTokens"]) > 4000:
             bot.send_message(requests_queue[0][0], "Ваш запрос преодалел предел в 4000 токенов. Ваш диалог был сброшен")
             messages[int(requests_queue[0][0])] = []
