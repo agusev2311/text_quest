@@ -140,6 +140,8 @@ def start_quest(message):
         for i in requests_queue:
             if i[0] == message.from_user.id:
                 tf = False
+            elif i[0] == message.chat.id:
+                tf = False
         if not tf:
             bot.send_message(message.chat.id, "Сейчас вы не можете сделать это действие, так как вы находитесь в очереди. Дождитесь пока вы выйдете из очереди.")
             return 0
@@ -166,6 +168,8 @@ def handle_query(call):
     tf = True
     for i in requests_queue:
         if i[0] == call.from_user.id:
+            tf = False
+        elif i[0] == call.message.chat.id:
             tf = False
     if not tf:
         bot.send_message(call.message.chat.id, "Сейчас вы не можете сделать это действие, так как вы находитесь в очереди. Дождитесь пока вы выйдете из очереди.")
