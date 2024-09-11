@@ -91,19 +91,26 @@ def gen_2():
     markup.add(button1, button2)
     markup.add(button3, button4)
     while True:
-        if (len(requests_queue) < 1):
-            time.sleep(2)
-            continue
-        bot.send_message(requests_queue[0][0], "Генерация...")
-        msgs = requests_queue[0][1]
-        ans = generate(msgs)
-        save_request(msgs, ans, requests_queue[0][0])
-        messages[int(requests_queue[0][0])].append(ans["result"]["alternatives"][0]["message"]["text"])
-        bot.send_message(requests_queue[0][0], ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup, parse_mode="markdown")
-        if int(ans["result"]["usage"]["totalTokens"]) > 4000:
-            bot.send_message(requests_queue[0][0], "Ваш запрос преодалел предел в 4000 токенов. Ваш диалог был сброшен")
-            messages[int(requests_queue[0][0])] = []
-        requests_queue.pop(0)
+        try:
+            if (len(requests_queue) < 1):
+                time.sleep(2)
+                continue
+            bot.send_message(requests_queue[0][0], "Генерация...")
+            msgs = requests_queue[0][1]
+            ans = generate(msgs)
+            save_request(msgs, ans, requests_queue[0][0])
+            messages[int(requests_queue[0][0])].append(ans["result"]["alternatives"][0]["message"]["text"])
+            bot.send_message(requests_queue[0][0], ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup, parse_mode="markdown")
+            if int(ans["result"]["usage"]["totalTokens"]) > 7200:
+                bot.send_message(requests_queue[0][0], "Ваш запрос преодалел предел в 7200 токенов. Ваш диалог был сброшен")
+                messages[int(requests_queue[0][0])] = []
+            requests_queue.pop(0)
+        except:
+            try:
+                bot.send_message(requests_queue[0][0], "При обработке запроса произошла ошибка. Попробуйте отправить запрос ещё раз.")
+            except:
+                pass
+            requests_queue.pop(0)
         time.sleep(2)
 
 @bot.message_handler(commands=['start'])
