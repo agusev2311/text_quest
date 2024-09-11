@@ -7,6 +7,24 @@ import time
 from threading import Thread
 import datetime
 
+import datetime
+
+def check_request_limit(user_id):
+    conn = sqlite3.connect('requests.db')
+    cursor = conn.cursor()
+    current_time = datetime.datetime.now()
+    one_hour_ago = current_time - datetime.timedelta(hours=1)
+    cursor.execute('''
+        SELECT COUNT(*) FROM requests
+        WHERE user_id = ? AND time > ?
+    ''', (user_id, one_hour_ago))
+    request_count = cursor.fetchone()[0]
+    conn.close()
+    max_requests_per_hour = int(config['max_requests_per_hour'])
+    if request_count >= max_requests_per_hour:
+        return False
+    return True
+
 conn = sqlite3.connect('requests.db')
 cursor = conn.cursor()
 cursor.execute('''
@@ -28,7 +46,7 @@ def save_request(messages, response, id):
     conn = sqlite3.connect('requests.db')
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO requests (messages, response, user_id) VALUES (?, ?, ?, ?)
+        INSERT INTO requests (messages, response, user_id, time) VALUES (?, ?, ?, ?)
     ''', (json.dumps(messages), json.dumps(response), json.dumps(id), datetime.datetime.now()))
     conn.commit()
     conn.close()
@@ -83,8 +101,8 @@ def gen_2():
         save_request(msgs, ans, requests_queue[0][0])
         messages[int(requests_queue[0][0])].append(ans["result"]["alternatives"][0]["message"]["text"])
         bot.send_message(requests_queue[0][0], ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup)
-        if int(ans["result"]["usage"]["totalTokens"]) > 7400:
-            bot.send_message(requests_queue[0][0], "Ваш запрос преодалел придел в 7400 токенов. Ваш диалог был сброшен")
+        if int(ans["result"]["usage"]["totalTokens"]) > 4000:
+            bot.send_message(requests_queue[0][0], "Ваш запрос преодалел предел в 4000 токенов. Ваш диалог был сброшен")
             messages[int(requests_queue[0][0])] = []
         requests_queue.pop(0)
         time.sleep(2)
@@ -107,6 +125,9 @@ def start_quest(message):
 Пример:
 /start_quest Как спасти планету от нашествия бананов""")
     else:
+        if not check_request_limit(message.from_user.id):
+            bot.send_message(message.chat.id, f"За последний час вы отправили больше {config['max_requests_per_hour']} реквестов.")
+            return
         topic = message.text[message.text.find(" ")+1:]
         
         markup = types.InlineKeyboardMarkup()
@@ -140,6 +161,9 @@ def start_quest(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_query(call):
+    if not check_request_limit(call.from_user.id):
+            bot.send_message(call.message.chat.id, f"За последний час вы отправили больше {config['max_requests_per_hour']} реквестов.")
+            return
     tf = True
     for i in requests_queue:
         print(i)
