@@ -94,7 +94,6 @@ def gen_2():
         if (len(requests_queue) < 1):
             time.sleep(2)
             continue
-        # print(requests_queue)
         bot.send_message(requests_queue[0][0], "Генерация...")
         msgs = requests_queue[0][1]
         ans = generate(msgs)
@@ -166,7 +165,6 @@ def handle_query(call):
             return
     tf = True
     for i in requests_queue:
-        print(i)
         if i[0] == call.from_user.id:
             tf = False
     if not tf:
