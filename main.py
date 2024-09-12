@@ -93,17 +93,20 @@ def gen_2():
     while True:
         try:
             if (len(requests_queue) < 1):
-                time.sleep(2)
                 continue
             bot.send_message(requests_queue[0][0], "Генерация...")
             msgs = requests_queue[0][1]
             ans = generate(msgs)
             save_request(msgs, ans, requests_queue[0][0])
             messages[int(requests_queue[0][0])].append(ans["result"]["alternatives"][0]["message"]["text"])
-            bot.send_message(requests_queue[0][0], ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup, parse_mode="markdown")
-            if int(ans["result"]["usage"]["totalTokens"]) > 7200:
+            if ((len(messages[int(requests_queue[0][0])]) - 1) < 20):
+                bot.send_message(requests_queue[0][0], ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup, parse_mode="markdown")
+            elif int(ans["result"]["usage"]["totalTokens"]) > 7200:
                 bot.send_message(requests_queue[0][0], "Ваш запрос преодалел предел в 7200 токенов. Ваш диалог был сброшен")
                 messages[int(requests_queue[0][0])] = []
+            else:
+                bot.send_message(requests_queue[0][0], ans["result"]["alternatives"][0]["message"]["text"], parse_mode="markdown")
+                bot.send_message(requests_queue[0][0], "Вы закончили квест! Пожалуйста, напишите фидбек @agusev2311")
             requests_queue.pop(0)
         except:
             try:
@@ -111,7 +114,6 @@ def gen_2():
             except:
                 pass
             requests_queue.pop(0)
-        time.sleep(2)
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -157,11 +159,11 @@ def start_quest(message):
             bot.reply_to(message, f"Вы добавлены в очередь. Перед вами {len(requests_queue)} реквест(ов/а)")
         else:
             pass
-        messages[int(message.chat.id)] = [f"Ты ведущий текстового квеста. Ты должен выдавать части квеста, после каждой задавай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4. Пользователь не определяет сюжет, а только выбирает собственные действия. Тема квеста: {topic}. Расскажи первую часть и задай первый вопрос."]
+        messages[int(message.chat.id)] = [f"Ты ведущий текстового квеста. Ты должен выдавать части квеста, после каждой задавай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4. Пользователь не определяет сюжет, а только выбирает собственные действия. Тема квеста: {topic}. Квест должен длиться 10 вопросов. Расскажи первую часть и задай первый вопрос."]
         msgs = [
             {
                 "role": "user", 
-                "text": f"Ты ведущий текстового квеста. Ты должен выдавать части квеста, после каждой задавай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4. Пользователь не определяет сюжет, а только выбирает собственные действия. Тема квеста: {topic}. Расскажи первую часть и задай первый вопрос."
+                "text": f"Ты ведущий текстового квеста. Ты должен выдавать части квеста, после каждой задавай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4. Пользователь не определяет сюжет, а только выбирает собственные действия. Тема квеста: {topic}. Квест должен длиться 10 вопросов. Расскажи первую часть и задай первый вопрос."
             }
         ]
         requests_queue.append([message.chat.id, msgs])
@@ -188,14 +190,24 @@ def handle_query(call):
     if messages[call.message.chat.id] == []:
         bot.send_message(call.message.chat.id, f"У вас нету истории запросов. Скорее всего бот был перезагружен, а при перезагрузке вся история переписок удаляется. Попробуйте начать квест заново. Если вам нужна история вашей переписки с ботом вы можете обратьтиться ко мне (@agusev2311)!")
         return
-    if call.data == 'button1':
-        messages[int(call.message.chat.id)].append("Игрок выбрал ответ 1. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
-    elif call.data == 'button2':
-        messages[int(call.message.chat.id)].append("Игрок выбрал ответ 2. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
-    elif call.data == 'button3':
-        messages[int(call.message.chat.id)].append("Игрок выбрал ответ 3. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
-    elif call.data == 'button4':
-        messages[int(call.message.chat.id)].append("Игрок выбрал ответ 4. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4.")
+    if (len(messages[int(call.message.chat.id)]) < 18):
+        if call.data == 'button1':
+            messages[int(call.message.chat.id)].append(f"Игрок выбрал ответ 1. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4. Квест должен закончиться через {len(messages[int(call.message.chat.id)])} вопросов.")
+        elif call.data == 'button2':
+            messages[int(call.message.chat.id)].append(f"Игрок выбрал ответ 2. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4. Квест должен закончиться через {len(messages[int(call.message.chat.id)])} вопросов.")
+        elif call.data == 'button3':
+            messages[int(call.message.chat.id)].append(f"Игрок выбрал ответ 3. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4. Квест должен закончиться через {len(messages[int(call.message.chat.id)])} вопросов.")
+        elif call.data == 'button4':
+            messages[int(call.message.chat.id)].append(f"Игрок выбрал ответ 4. Расскажи следующую часть квеста и задай игроку вопрос с 4 вариантами ответа с номерами от 1 до 4. Квест должен закончиться через {len(messages[int(call.message.chat.id)])} вопросов.")
+    else:
+        if call.data == 'button1':
+            messages[int(call.message.chat.id)].append(f"Игрок выбрал ответ 1. Закончите квест.")
+        elif call.data == 'button2':
+            messages[int(call.message.chat.id)].append(f"Игрок выбрал ответ 2. Закончите квест.")
+        elif call.data == 'button3':
+            messages[int(call.message.chat.id)].append(f"Игрок выбрал ответ 3. Закончите квест.")
+        elif call.data == 'button4':
+            messages[int(call.message.chat.id)].append(f"Игрок выбрал ответ 4. Закончите квест.")
     for i in range(len(messages[call.message.chat.id])):
         if (i % 2 == 0):
             msgs.append({"role": "user", "text": messages[call.message.chat.id][i]})
