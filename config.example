@@ -3,3 +3,5 @@ ac_id = aaaaaaaaaaaaaaaaaaaa
 max_tokens = 5000
 telegram_token = token
 max_requests_per_hour = 10
+API_key_for_kandinsky = AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+secret_key_kandnskiy = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
