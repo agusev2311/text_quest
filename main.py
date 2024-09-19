@@ -19,6 +19,8 @@ from random import choice as ch
 
 import os
 
+
+os.mkdir(os.getcwd().replace("\\", "/") + f'/' + 'result'
 class Text2ImageAPI:
 
     def __init__(self, url, api_key, secret_key):
@@ -61,7 +63,8 @@ class Text2ImageAPI:
 
             attempts -= 1
             time.sleep(delay)
-def gen_photo(prom, dirr = "res"):
+def gen_photo(prom):
+    dirr = "result"
     api = Text2ImageAPI('https://api-key.fusionbrain.ai/', 'API', 'secret key')
     # print(api.get_model())
     model_id = api.get_model()
@@ -76,10 +79,11 @@ def gen_photo(prom, dirr = "res"):
 
     # Открываем файл для записи бинарных данных изображения
     try:
-        with open(f"{dirr}/{prom.split('.')[0]} _ {r(0, 100000)}.jpg", "wb") as file:
+        with open(f"{dirr}/0.jpg", "wb") as file:
             file.write(image_data)
     except:
-        with open(f"{dirr}/{prom.split('.')[0]} _ {r(0, 100000)}.jpg", "w+") as file:
+        remove(f"{dirr}/0.jpg")
+        with open(f"{dirr}/0.jpg", "w+") as file:
             file.write(image_data)
 
 # конец
@@ -183,9 +187,22 @@ def gen_2():
             bot.send_message(requests_queue[0][0], "Генерация...")
             msgs = requests_queue[0][1]
             ans = generate(msgs)
+
+
+            zapros = ans["result"]["alternatives"][0]["message"]["text"]
+
+           
+
+            gen_photo(zapros.replace("\n", " ")+', реализм, вид от первого лица, без текста')
+
+
+            
             save_request(msgs, ans, requests_queue[0][0])
             messages[int(requests_queue[0][0])].append(ans["result"]["alternatives"][0]["message"]["text"])
+            bot.send_photo(requests_queue[0][0], "")
             bot.send_message(requests_queue[0][0], ans["result"]["alternatives"][0]["message"]["text"], reply_markup=markup, parse_mode="markdown")
+            
+            
             if int(ans["result"]["usage"]["totalTokens"]) > 7200:
                 bot.send_message(requests_queue[0][0], "Ваш запрос преодалел предел в 7200 токенов. Ваш диалог был сброшен")
                 messages[int(requests_queue[0][0])] = []
