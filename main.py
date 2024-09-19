@@ -19,8 +19,10 @@ from random import choice as ch
 
 import os
 
-
-os.mkdir(os.getcwd().replace("\\", "/") + f'/' + 'result')
+try:
+    os.mkdir(os.getcwd().replace("\\", "/") + f'/' + 'result')
+except:
+    pass
 
 config = dict([])
 
