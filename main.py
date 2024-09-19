@@ -21,6 +21,12 @@ import os
 
 
 os.mkdir(os.getcwd().replace("\\", "/") + f'/' + 'result')
+
+config = dict([])
+
+for i in open("config", "r").readlines():
+    config[i.split(" = ")[0]] = i.split(" = ")[1].split("\n")[0]
+    
 class Text2ImageAPI:
 
     def __init__(self, url, api_key, secret_key):
@@ -65,7 +71,7 @@ class Text2ImageAPI:
             time.sleep(delay)
 def gen_photo(prom):
     dirr = "result"
-    api = Text2ImageAPI('https://api-key.fusionbrain.ai/', 'API', 'secret key')
+    api = Text2ImageAPI('https://api-key.fusionbrain.ai/', dict['API_key_for_kandinsky'], dict['secret_key_kandinskiy'])
     # print(api.get_model())
     model_id = api.get_model()
     uuid = api.generate(prom, model_id)
@@ -140,10 +146,6 @@ def save_request(messages, response, id):
     conn.commit()
     conn.close()
 
-config = dict([])
-
-for i in open("config", "r").readlines():
-    config[i.split(" = ")[0]] = i.split(" = ")[1].split("\n")[0]
 
 bot = telebot.TeleBot(config["telegram_token"])
 
