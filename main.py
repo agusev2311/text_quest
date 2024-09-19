@@ -20,7 +20,7 @@ from random import choice as ch
 import os
 
 
-os.mkdir(os.getcwd().replace("\\", "/") + f'/' + 'result'
+os.mkdir(os.getcwd().replace("\\", "/") + f'/' + 'result')
 class Text2ImageAPI:
 
     def __init__(self, url, api_key, secret_key):
