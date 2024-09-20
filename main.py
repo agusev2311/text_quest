@@ -192,8 +192,8 @@ def gen_2():
             msgs = requests_queue[0][1]
             ans = generate(msgs)
 
-
-            zapros = ans["result"]["alternatives"][0]["message"]["text"]
+            
+            zapros = generate('сгенерируй промпт для генерации фото за 1000$ для этого квеста: ' + ans["result"]["alternatives"][0]["message"]["text"])
 
            
 
