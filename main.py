@@ -10,8 +10,6 @@ import datetime
 import datetime
 
 # код для запроса для фото-нейросети
-
-import time
 import base64
 
 from random import randint as r
